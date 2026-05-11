@@ -1,0 +1,61 @@
+{
+  "title": "VRF Niger Delta Contamination Risk Model",
+  "version": "1.0.0-poc",
+  "generated": "2026-05-11T11:38:41.223349",
+  "crs": "EPSG:4326",
+  "grid_res_deg": 0.01,
+  "crs_weights": {
+    "hi": 0.1264,
+    "tph": 0.8392,
+    "metal": 0.0344
+  },
+  "model_metrics": {
+    "hi": {
+      "roc_auc_cv": 0.7833,
+      "roc_auc_std": 0.3527
+    },
+    "tph": {
+      "roc_auc_cv": 0.7982,
+      "roc_auc_std": 0.189
+    },
+    "metal": {
+      "rmse_cv": 0.0166,
+      "rmse_std": 0.0302
+    }
+  },
+  "validation": {
+    "sloocv_mae": 0.028400769655008512,
+    "sloocv_rmse": 0.10589304919361066,
+    "coverage_probability": 0.783,
+    "morans_i": -0.10346207848454121
+  },
+  "risk_tiers": {
+    "critical": {
+      "min_crs": 0.75,
+      "colour": "#FF1744"
+    },
+    "high": {
+      "min_crs": 0.5,
+      "colour": "#FF6D00"
+    },
+    "medium": {
+      "min_crs": 0.25,
+      "colour": "#FFD600"
+    },
+    "low": {
+      "min_crs": 0.0,
+      "colour": "#69F0AE"
+    }
+  },
+  "data_sources": [
+    "NOSDRA Oil Spill Monitor (oilspillmonitor.ng)",
+    "UNEP Environmental Assessment of Ogoniland (2011)",
+    "Peer-reviewed literature (P01-P09, 2009-2026)"
+  ],
+  "grid_tier_counts": {
+    "low": 206257,
+    "medium": 3529,
+    "high": 190,
+    "critical": 24
+  }
+}

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Niger Delta Risk — VRF</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+			rel="stylesheet"
+		/>
+		<link
+			href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css"
+			rel="stylesheet"
+		/>
+		<link rel="stylesheet" href="/src/style.css" />
+	</head>
+	<body>
+		<div id="app">
+			<header id="header">
+				<div id="header-left">
+					<span id="title">Niger Delta Contamination Risk</span>
+					<span id="subtitle">VRF Composite Risk Score · 1km² resolution</span>
+				</div>
+				<div id="header-right">
+					<a href="https://ojochogwu.dev/research" target="_blank" id="credit">
+						Dickson Ojochogwu Dickson
+					</a>
+				</div>
+			</header>
+
+			<div id="map"></div>
+
+			<div id="panel">
+				<div id="panel-section">
+					<div class="panel-label">Layers</div>
+					<label class="toggle">
+						<input type="checkbox" id="toggle-grid" checked />
+						<span class="toggle-track"></span>
+						<span class="toggle-label">Risk grid</span>
+					</label>
+					<label class="toggle">
+						<input type="checkbox" id="toggle-hotspots" checked />
+						<span class="toggle-track"></span>
+						<span class="toggle-label">Hotspots</span>
+					</label>
+					<label class="toggle">
+						<input type="checkbox" id="toggle-spills" />
+						<span class="toggle-track"></span>
+						<span class="toggle-label">Spill incidents</span>
+					</label>
+					<label class="toggle">
+						<input type="checkbox" id="toggle-points" />
+						<span class="toggle-track"></span>
+						<span class="toggle-label">Sample points</span>
+					</label>
+				</div>
+
+				<div id="panel-section">
+					<div class="panel-label">Risk tiers</div>
+					<div class="legend">
+						<div class="legend-row">
+							<span class="dot" style="background: #ff1744"></span>
+							Critical ≥ 0.75
+						</div>
+						<div class="legend-row">
+							<span class="dot" style="background: #ff6d00"></span>
+							High 0.50 – 0.74
+						</div>
+						<div class="legend-row">
+							<span class="dot" style="background: #ffd600"></span>
+							Medium 0.25 – 0.49
+						</div>
+						<div class="legend-row">
+							<span class="dot" style="background: #69f0ae"></span>
+							Low &lt; 0.25
+						</div>
+					</div>
+				</div>
+
+				<div id="panel-section" id="stats-section">
+					<div class="panel-label">Model</div>
+					<div id="stats"></div>
+				</div>
+			</div>
+
+			<div id="tooltip"></div>
+		</div>
+
+		<script type="module" src="/src/main.js"></script>
+	</body>
+</html>
