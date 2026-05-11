@@ -306,4 +306,12 @@ function setupToggles() {
 			layers.forEach((l) => map.setLayoutProperty(l, 'visibility', vis));
 		});
 	});
+
+	const panel = document.getElementById('panel');
+	const panelBtn = document.getElementById('panel-btn');
+
+	panelBtn.addEventListener('click', () => {
+		panel.classList.toggle('is-open');
+		panelBtn.classList.toggle('is-open');
+	});
 }
