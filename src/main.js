@@ -86,11 +86,22 @@ map.on('load', async () => {
 
 	map.addLayer({
 		id: 'grid-fill',
-		type: 'fill',
+		type: 'circle',
 		source: 'grid',
 		paint: {
-			'fill-color': ['get', 'colour'],
-			'fill-opacity': 0.55,
+			'circle-color': ['get', 'colour'],
+			'circle-opacity': 0.7,
+			'circle-radius': [
+				'interpolate',
+				['linear'],
+				['zoom'],
+				5,
+				2,
+				9,
+				5,
+				13,
+				14,
+			],
 		},
 	});
 
@@ -101,11 +112,24 @@ map.on('load', async () => {
 
 	map.addLayer({
 		id: 'hotspots-fill',
-		type: 'fill',
+		type: 'circle',
 		source: 'hotspots',
 		paint: {
-			'fill-color': ['get', 'colour'],
-			'fill-opacity': 0.85,
+			'circle-color': ['get', 'colour'],
+			'circle-opacity': 0.9,
+			'circle-radius': [
+				'interpolate',
+				['linear'],
+				['zoom'],
+				5,
+				5,
+				9,
+				10,
+				13,
+				22,
+			],
+			'circle-stroke-width': 1,
+			'circle-stroke-color': '#0a0a0a',
 		},
 	});
 
@@ -214,8 +238,7 @@ function setupInteractions() {
 		const p = e.features[0].properties;
 		showTooltip(
 			e,
-			`
-      <div class="tt-row"><span class="tt-key">Company</span><span>${p.company || '—'}</span></div>
+			`<div class="tt-row"><span class="tt-key">Company</span><span>${p.company || '—'}</span></div>
       <div class="tt-row"><span class="tt-key">Date</span><span>${p.spill_date?.slice(0, 10) || '—'}</span></div>
       <div class="tt-row"><span class="tt-key">Volume</span><span>${p.volume_bbls ? Math.round(p.volume_bbls) + ' bbls' : '—'}</span></div>
       <div class="tt-row"><span class="tt-key">Cause</span><span>${p.cause || '—'}</span></div>
