@@ -1,6 +1,9 @@
 # Niger Delta Contamination Risk Model
 
-Interactive map companion to the paper *A multi-pathway contamination risk model for Niger Delta communities: integrating hydrocarbon, heavy metal, and vegetation stress indices from heterogeneous observational data*. Built with Mapbox GL JS and Vite.
+Interactive map companion to the paper *A multi-pathway contamination risk model for Niger Delta communities: integrating hydrocarbon load, heavy metal exposure, and vegetation stress indices from heterogeneous observational data*. Built with Mapbox GL JS and Vite.
+
+**Live map:** [research-map.ojochogwu.dev](https://research-map.ojochogwu.dev)
+**Dataset:** [github.com/ojochogwu866/nd-data](https://github.com/ojochogwu866/nd-data)
 
 ## Layers
 
