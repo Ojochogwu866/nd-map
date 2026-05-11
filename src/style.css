@@ -114,12 +114,12 @@ body,
 	flex-direction: column;
 }
 
-#panel-section {
+.panel-section {
 	padding: 16px;
 	border-bottom: 1px solid var(--border);
 }
 
-#panel-section:last-child {
+.panel-section:last-child {
 	border-bottom: none;
 }
 
@@ -204,6 +204,11 @@ body,
 	border-radius: 50%;
 	flex-shrink: 0;
 }
+
+.dot--critical { background: var(--critical); }
+.dot--high     { background: var(--high); }
+.dot--medium   { background: var(--medium); }
+.dot--low      { background: var(--low); }
 
 #stats {
 	display: flex;
