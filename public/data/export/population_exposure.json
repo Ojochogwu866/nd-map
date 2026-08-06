@@ -1,0 +1,16 @@
+{
+  "source": "WorldPop Global 2000-2020 Constrained, maxar_v1, Nigeria 2020 (100m)",
+  "total_population_in_grid_extent": 59360817,
+  "population_by_tier": {
+    "critical": 379795,
+    "high": 713542,
+    "low": 56935934,
+    "medium": 1331546
+  },
+  "cells_by_tier": {
+    "low": 205785,
+    "medium": 3454,
+    "high": 688,
+    "critical": 73
+  }
+}

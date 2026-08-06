@@ -60,6 +60,11 @@
 				</div>
 			</header>
 
+			<div id="exposure-banner">
+				<span id="exposure-value">—</span>
+				<span id="exposure-label">people live in critical or high-risk cells</span>
+			</div>
+
 			<div id="map"></div>
 
 			<button type="button" id="panel-btn" aria-label="Toggle layers panel">
@@ -131,16 +136,35 @@
 						<span class="toggle-track"></span>
 						<span class="toggle-label">Spill incidents</span>
 					</label>
+					<div class="year-slider-row" id="year-slider-row">
+						<div class="year-slider-label">
+							<span>Through</span>
+							<span id="year-slider-value">—</span>
+						</div>
+						<input
+							type="range"
+							id="year-slider"
+							min="1994"
+							max="2026"
+							value="2026"
+							step="1"
+						/>
+					</div>
 					<label class="toggle">
 						<input type="checkbox" id="toggle-points" />
 						<span class="toggle-track"></span>
 						<span class="toggle-label">Sample points</span>
 					</label>
+					<label class="toggle">
+						<input type="checkbox" id="toggle-uncertainty" />
+						<span class="toggle-track"></span>
+						<span class="toggle-label">Uncertainty (grid)</span>
+					</label>
 				</div>
 
 				<div class="panel-section">
 					<div class="panel-label">Risk tiers</div>
-					<div class="legend">
+					<div class="legend" id="legend-tiers">
 						<div class="legend-row">
 							<span class="dot dot--critical"></span>
 							Critical ≥ 0.75
@@ -158,6 +182,26 @@
 							Low &lt; 0.25
 						</div>
 					</div>
+					<div class="legend" id="legend-uncertainty" style="display: none">
+						<div class="legend-row">
+							<span class="dot dot--unc-low"></span>
+							Narrow CI (confident)
+						</div>
+						<div class="legend-row">
+							<span class="dot dot--unc-med"></span>
+							Moderate CI
+						</div>
+						<div class="legend-row">
+							<span class="dot dot--unc-high"></span>
+							Wide CI (uncertain)
+						</div>
+					</div>
+				</div>
+
+				<div class="panel-section" id="exposure-section">
+					<div class="panel-label">Population exposure</div>
+					<div id="exposure-stats"></div>
+					<div class="panel-note">WorldPop 2020, constrained</div>
 				</div>
 
 				<div class="panel-section" id="stats-section">
@@ -167,6 +211,14 @@
 			</div>
 
 			<div id="tooltip"></div>
+
+			<div id="risk-brief">
+				<button type="button" id="risk-brief-close" aria-label="Close">
+					&times;
+				</button>
+				<div id="risk-brief-place"></div>
+				<div id="risk-brief-body"></div>
+			</div>
 
 			<footer id="mobile-footer">
 				<span id="footer-subtitle">Composite Risk Score · 1km²</span>

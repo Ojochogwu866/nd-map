@@ -1,8 +1,13 @@
 import mapboxgl from 'mapbox-gl';
+import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
+import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import './style.css';
 
 const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 const DATA_URL = import.meta.env.VITE_DATA_URL || '/data/export';
+
+// Bounding box of the scored grid.
+const GRID_BBOX = [4.0, 3.5, 9.99, 6.99];
 
 mapboxgl.accessToken = TOKEN;
 
@@ -14,6 +19,15 @@ const map = new mapboxgl.Map({
 	minZoom: 5,
 	maxZoom: 14,
 });
+
+const geocoder = new MapboxGeocoder({
+	accessToken: TOKEN,
+	mapboxgl,
+	marker: true,
+	bbox: GRID_BBOX,
+	placeholder: 'Search a place in the Niger Delta…',
+});
+map.addControl(geocoder, 'top-left');
 
 map.addControl(
 	new mapboxgl.NavigationControl({ showCompass: false }),
@@ -51,13 +65,148 @@ function fmt(val, dp = 3) {
 	return val != null ? Number(val).toFixed(dp) : '—';
 }
 
+function fmtCompact(val) {
+	return val != null
+		? new Intl.NumberFormat('en', {
+				notation: 'compact',
+				maximumFractionDigits: 2,
+			}).format(val)
+		: '—';
+}
+
+function tierFromCRS(crs) {
+	if (crs >= 0.75) return 'critical';
+	if (crs >= 0.5) return 'high';
+	if (crs >= 0.25) return 'medium';
+	return 'low';
+}
+
+// Haversine distance in km.
+function distKm(lat1, lon1, lat2, lon2) {
+	const R = 6371;
+	const dLat = ((lat2 - lat1) * Math.PI) / 180;
+	const dLon = ((lon2 - lon1) * Math.PI) / 180;
+	const a =
+		Math.sin(dLat / 2) ** 2 +
+		Math.cos((lat1 * Math.PI) / 180) *
+			Math.cos((lat2 * Math.PI) / 180) *
+			Math.sin(dLon / 2) ** 2;
+	return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+let riskLookup = null;
+let riskPointsData = null;
+let spillsData = null;
+
+async function loadRiskBriefData() {
+	const [lookupRes, ptsRes, spillsRes] = await Promise.all([
+		fetch(`${DATA_URL}/risk_lookup.json`),
+		fetch(`${DATA_URL}/risk_points.geojson`),
+		fetch(`${DATA_URL}/spills.geojson`),
+	]);
+	riskLookup = await lookupRes.json();
+	riskPointsData = (await ptsRes.json()).features;
+	spillsData = (await spillsRes.json()).features;
+}
+
+function lookupRisk(lon, lat) {
+	if (!riskLookup) return null;
+	const { lon_min, lat_min, res, cols, rows, crs } = riskLookup;
+	const col = Math.round((lon - lon_min) / res);
+	const row = Math.round((lat - lat_min) / res);
+	if (col < 0 || col >= cols || row < 0 || row >= rows) return null;
+	const value = crs[row * cols + col];
+	return { crs: value, tier: tierFromCRS(value) };
+}
+
+function nearestSamplePoint(lon, lat, maxKm = 60) {
+	if (!riskPointsData) return null;
+	let best = null;
+	let bestDist = Infinity;
+	for (const f of riskPointsData) {
+		const [flon, flat] = f.geometry.coordinates;
+		const d = distKm(lat, lon, flat, flon);
+		if (d < bestDist) {
+			bestDist = d;
+			best = f;
+		}
+	}
+	if (!best || bestDist > maxKm) return null;
+	return { distanceKm: bestDist, properties: best.properties };
+}
+
+function nearbySpillCount(lon, lat, radiusKm = 15) {
+	if (!spillsData) return 0;
+	let count = 0;
+	for (const f of spillsData) {
+		const [flon, flat] = f.geometry.coordinates;
+		if (Math.abs(flon - lon) > 0.3 || Math.abs(flat - lat) > 0.3) continue;
+		if (distKm(lat, lon, flat, flon) <= radiusKm) count++;
+	}
+	return count;
+}
+
+function showRiskBrief(placeName, lon, lat) {
+	const placeEl = document.getElementById('risk-brief-place');
+	const bodyEl = document.getElementById('risk-brief-body');
+	placeEl.textContent = placeName;
+
+	const risk = lookupRisk(lon, lat);
+	if (!risk) {
+		bodyEl.innerHTML = `<div class="rb-note">Outside model coverage area (grid spans lon 4–10°E, lat 3.5–7°N).</div>`;
+		document.getElementById('risk-brief').classList.add('is-open');
+		return;
+	}
+
+	const sample = nearestSamplePoint(lon, lat);
+	const spillCount = nearbySpillCount(lon, lat);
+
+	const rows = [
+		['Nearby spills (15km)', String(spillCount)],
+		[
+			'Nearest sample',
+			sample
+				? `${fmt(sample.distanceKm, 1)} km — ${(sample.properties.risk_tier || '—').toUpperCase()}`
+				: 'none within 60km',
+		],
+		['Dominant pathway', 'Hydrocarbon load (TPH)'],
+	];
+
+	bodyEl.innerHTML = `
+    <div class="tt-tier" style="color:${tierColor(risk.tier)}">${risk.tier.toUpperCase()}</div>
+    <div class="tt-row"><span class="tt-key">CRS</span><span>${fmt(risk.crs)}</span></div>
+    ${rows.map(([k, v]) => `<div class="tt-row"><span class="tt-key">${k}</span><span>${v}</span></div>`).join('')}
+    ${
+			!sample
+				? '<div class="rb-note">No ground-truth sample within 60km — treat this score as a lower-confidence extrapolation.</div>'
+				: ''
+		}
+  `;
+	document.getElementById('risk-brief').classList.add('is-open');
+}
+
+function setupRiskBrief() {
+	document.getElementById('risk-brief-close').addEventListener('click', () => {
+		document.getElementById('risk-brief').classList.remove('is-open');
+	});
+
+	geocoder.on('result', (e) => {
+		const [lon, lat] = e.result.center;
+		showRiskBrief(e.result.place_name, lon, lat);
+	});
+
+	geocoder.on('clear', () => {
+		document.getElementById('risk-brief').classList.remove('is-open');
+	});
+}
+
 async function loadMeta() {
 	const res = await fetch(`${DATA_URL}/metadata.json`);
 	const meta = await res.json();
 	const stats = document.getElementById('stats');
 
 	const rows = [
-		['HI AUC', fmt(meta.model_metrics?.hi?.roc_auc_cv)],
+		['HI', meta.model_metrics?.hi?.note ? 'computed, not modelled' : '—'],
 		['TPH AUC', fmt(meta.model_metrics?.tph?.roc_auc_cv)],
 		['Metal RMSE', fmt(meta.model_metrics?.metal?.rmse_cv)],
 		['MAE', fmt(meta.validation?.sloocv_mae)],
@@ -74,10 +223,40 @@ async function loadMeta() {
   `
 		)
 		.join('');
+
+	const exposure = meta.population_exposure;
+	if (exposure?.population_by_tier) {
+		const byTier = exposure.population_by_tier;
+		const critHigh = (byTier.critical || 0) + (byTier.high || 0);
+
+		document.getElementById('exposure-value').textContent =
+			fmtCompact(critHigh);
+		document.getElementById('exposure-label').textContent =
+			'people live in critical or high-risk cells';
+
+		const expRows = [
+			['Critical', fmtCompact(byTier.critical)],
+			['High', fmtCompact(byTier.high)],
+			['Medium', fmtCompact(byTier.medium)],
+			['Total (grid)', fmtCompact(exposure.total_population_in_grid_extent)],
+		];
+		document.getElementById('exposure-stats').innerHTML = expRows
+			.map(
+				([k, v]) => `
+      <div class="stat-row">
+        <span class="stat-key">${k}</span>
+        <span class="stat-val">${v}</span>
+      </div>
+    `
+			)
+			.join('');
+	}
 }
 
 map.on('load', async () => {
 	await loadMeta();
+	loadRiskBriefData().then(setupYearSlider);
+	setupRiskBrief();
 
 	map.addSource('grid', {
 		type: 'geojson',
@@ -86,22 +265,12 @@ map.on('load', async () => {
 
 	map.addLayer({
 		id: 'grid-fill',
-		type: 'circle',
+		type: 'fill',
 		source: 'grid',
 		paint: {
-			'circle-color': ['get', 'colour'],
-			'circle-opacity': 0.7,
-			'circle-radius': [
-				'interpolate',
-				['linear'],
-				['zoom'],
-				5,
-				2,
-				9,
-				5,
-				13,
-				14,
-			],
+			'fill-color': ['get', 'colour'],
+			'fill-opacity': 0.7,
+			'fill-outline-color': 'rgba(10, 15, 13, 0.4)',
 		},
 	});
 
@@ -112,24 +281,12 @@ map.on('load', async () => {
 
 	map.addLayer({
 		id: 'hotspots-fill',
-		type: 'circle',
+		type: 'fill',
 		source: 'hotspots',
 		paint: {
-			'circle-color': ['get', 'colour'],
-			'circle-opacity': 0.9,
-			'circle-radius': [
-				'interpolate',
-				['linear'],
-				['zoom'],
-				5,
-				5,
-				9,
-				10,
-				13,
-				22,
-			],
-			'circle-stroke-width': 1,
-			'circle-stroke-color': '#0a0a0a',
+			'fill-color': ['get', 'colour'],
+			'fill-opacity': 0.9,
+			'fill-outline-color': '#0a0a0a',
 		},
 	});
 
@@ -214,6 +371,7 @@ function setupInteractions() {
 			`
       <div class="tt-tier" style="color:${tierColor(tier)}">${tier.toUpperCase()}</div>
       <div class="tt-row"><span class="tt-key">CRS</span><span>${fmt(p.crs)}</span></div>
+      <div class="tt-row"><span class="tt-key">CI width</span><span>${fmt(p.ci_width)}</span></div>
     `
 		);
 	});
@@ -292,6 +450,44 @@ function setupInteractions() {
 	});
 }
 
+function setupYearSlider() {
+	if (!spillsData || spillsData.length === 0) return;
+
+	const years = spillsData
+		.map((f) => f.properties.year)
+		.filter((y) => y != null);
+	if (years.length === 0) return;
+	const minYear = Math.min(...years);
+	const maxYear = Math.max(...years);
+
+	const slider = document.getElementById('year-slider');
+	const valueEl = document.getElementById('year-slider-value');
+	slider.min = minYear;
+	slider.max = maxYear;
+	slider.value = maxYear;
+	valueEl.textContent = maxYear;
+
+	// setData re-clusters; a layer filter alone wouldn't update cluster counts.
+	let debounceTimer = null;
+	const applyYearFilter = (year) => {
+		const source = map.getSource('spills');
+		if (!source) return;
+		const atMax = year >= maxYear;
+		const filtered = spillsData.filter((f) => {
+			const y = f.properties.year;
+			return atMax || (y != null && y <= year);
+		});
+		source.setData({ type: 'FeatureCollection', features: filtered });
+	};
+
+	slider.addEventListener('input', (e) => {
+		const year = Number(e.target.value);
+		valueEl.textContent = year;
+		clearTimeout(debounceTimer);
+		debounceTimer = setTimeout(() => applyYearFilter(year), 60);
+	});
+}
+
 function setupToggles() {
 	const toggleMap = {
 		'toggle-grid': ['grid-fill'],
@@ -305,6 +501,32 @@ function setupToggles() {
 			const vis = e.target.checked ? 'visible' : 'none';
 			layers.forEach((l) => map.setLayoutProperty(l, 'visibility', vis));
 		});
+	});
+
+	const uncertaintyColor = [
+		'interpolate',
+		['linear'],
+		['coalesce', ['get', 'ci_width'], 0],
+		0,
+		'#29b6f6',
+		0.15,
+		'#7c4dff',
+		0.3,
+		'#d500f9',
+	];
+
+	document.getElementById('toggle-uncertainty').addEventListener('change', (e) => {
+		const showUncertainty = e.target.checked;
+		map.setPaintProperty(
+			'grid-fill',
+			'fill-color',
+			showUncertainty ? uncertaintyColor : ['get', 'colour']
+		);
+		document.getElementById('legend-tiers').style.display = showUncertainty
+			? 'none'
+			: 'flex';
+		document.getElementById('legend-uncertainty').style.display =
+			showUncertainty ? 'flex' : 'none';
 	});
 
 	const panel = document.getElementById('panel');

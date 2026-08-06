@@ -23,6 +23,7 @@
 	--font-mono: 'JetBrains Mono', monospace;
 
 	--header-h: 52px;
+	--banner-h: 34px;
 	--panel-w: 260px;
 	--footer-h: 40px;
 }
@@ -95,9 +96,45 @@ body,
 	color: var(--text);
 }
 
-#map {
+#exposure-banner {
 	position: fixed;
 	top: var(--header-h);
+	left: 0;
+	right: 0;
+	height: var(--banner-h);
+	background: linear-gradient(90deg, rgba(255, 23, 68, 0.14), rgba(255, 109, 0, 0.08));
+	border-bottom: 1px solid var(--border);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	font-family: var(--font-mono);
+	z-index: 90;
+	padding: 0 16px;
+	text-align: center;
+	white-space: nowrap;
+	overflow: hidden;
+}
+
+#exposure-value {
+	font-weight: 700;
+	font-size: 14px;
+	color: var(--high);
+	flex-shrink: 0;
+}
+
+#exposure-label {
+	color: var(--muted);
+	font-weight: 500;
+	font-size: 13px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+#map {
+	position: fixed;
+	top: calc(var(--header-h) + var(--banner-h));
 	left: 0;
 	right: 0;
 	bottom: 0;
@@ -105,7 +142,7 @@ body,
 
 #panel {
 	position: fixed;
-	top: calc(var(--header-h) + 16px);
+	top: calc(var(--header-h) + var(--banner-h) + 16px);
 	right: 16px;
 	width: var(--panel-w);
 	background: var(--surface);
@@ -219,6 +256,41 @@ body,
 	background: var(--low);
 }
 
+.dot--unc-low {
+	background: #29b6f6;
+}
+.dot--unc-med {
+	background: #7c4dff;
+}
+.dot--unc-high {
+	background: #d500f9;
+}
+
+.year-slider-row {
+	margin: 6px 0 8px 38px;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.year-slider-label {
+	display: flex;
+	justify-content: space-between;
+	font-size: 12px;
+	font-family: var(--font-mono);
+	color: var(--muted);
+}
+
+#year-slider-value {
+	color: var(--text);
+	font-weight: 600;
+}
+
+#year-slider {
+	width: 100%;
+	accent-color: var(--accent);
+}
+
 #stats {
 	display: flex;
 	flex-direction: column;
@@ -240,6 +312,13 @@ body,
 
 .stat-val {
 	font-weight: 500;
+	font-family: var(--font-mono);
+}
+
+.panel-note {
+	margin-top: 10px;
+	font-size: 12px;
+	color: var(--muted);
 	font-family: var(--font-mono);
 }
 
@@ -279,7 +358,7 @@ body,
 #panel-btn {
 	display: none;
 	position: fixed;
-	top: calc(var(--header-h) + 16px);
+	top: calc(var(--header-h) + var(--banner-h) + 16px);
 	right: 16px;
 	z-index: 60;
 	align-items: center;
@@ -308,10 +387,10 @@ body,
 	}
 
 	#panel {
-		top: var(--header-h);
+		top: calc(var(--header-h) + var(--banner-h));
 		right: 0;
 		width: var(--panel-w);
-		max-height: calc(100vh - var(--header-h) - var(--footer-h));
+		max-height: calc(100vh - var(--header-h) - var(--banner-h) - var(--footer-h));
 		transform: translateX(100%);
 		transition: transform 0.2s ease;
 		overflow-y: auto;
@@ -371,7 +450,7 @@ body,
 }
 
 .mapboxgl-ctrl-top-left {
-	top: calc(var(--header-h) + 12px);
+	top: calc(var(--header-h) + var(--banner-h) + 12px);
 	left: 12px;
 }
 
@@ -391,4 +470,107 @@ body,
 
 .mapboxgl-ctrl-group button + button {
 	border-top: 1px solid var(--border) !important;
+}
+
+.mapboxgl-ctrl-geocoder {
+	background: var(--surface) !important;
+	border: 1px solid var(--border) !important;
+	border-radius: 0 !important;
+	box-shadow: none !important;
+	font-family: var(--font-mono) !important;
+	width: 260px !important;
+	max-width: 60vw;
+}
+
+.mapboxgl-ctrl-geocoder input {
+	color: var(--text) !important;
+	font-family: var(--font-mono) !important;
+	font-size: 13px !important;
+}
+
+.mapboxgl-ctrl-geocoder--icon {
+	fill: var(--muted) !important;
+}
+
+.mapboxgl-ctrl-geocoder--suggestion {
+	background: var(--surface) !important;
+}
+
+.mapboxgl-ctrl-geocoder .suggestions {
+	background: var(--surface) !important;
+	border: 1px solid var(--border) !important;
+	border-radius: 0 !important;
+	font-family: var(--font-mono) !important;
+}
+
+.mapboxgl-ctrl-geocoder .suggestions > li > a {
+	color: var(--text) !important;
+}
+
+.mapboxgl-ctrl-geocoder .suggestions > .active > a,
+.mapboxgl-ctrl-geocoder .suggestions > li > a:hover {
+	background: var(--border) !important;
+}
+
+#risk-brief {
+	display: none;
+	position: fixed;
+	bottom: 16px;
+	left: 16px;
+	width: 260px;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	padding: 14px 16px;
+	z-index: 40;
+	font-size: 14px;
+}
+
+#risk-brief.is-open {
+	display: block;
+}
+
+#risk-brief-close {
+	position: absolute;
+	top: 8px;
+	right: 10px;
+	background: none;
+	border: none;
+	color: var(--muted);
+	font-size: 18px;
+	line-height: 1;
+	cursor: pointer;
+}
+
+#risk-brief-close:hover {
+	color: var(--text);
+}
+
+#risk-brief-place {
+	font-weight: 600;
+	font-size: 14px;
+	margin-bottom: 10px;
+	padding-right: 16px;
+}
+
+#risk-brief-body .tt-row {
+	margin-bottom: 6px;
+}
+
+.rb-note {
+	margin-top: 10px;
+	font-size: 12px;
+	color: var(--muted);
+	font-family: var(--font-mono);
+	line-height: 1.5;
+}
+
+@media (max-width: 640px) {
+	.mapboxgl-ctrl-geocoder {
+		width: 200px !important;
+	}
+
+	#risk-brief {
+		bottom: calc(var(--footer-h) + 16px);
+		width: calc(100vw - 32px);
+	}
 }
