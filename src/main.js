@@ -99,14 +99,23 @@ let riskPointsData = null;
 let spillsData = null;
 
 async function loadRiskBriefData() {
-	const [lookupRes, ptsRes, spillsRes] = await Promise.all([
-		fetch(`${DATA_URL}/risk_lookup.json`),
-		fetch(`${DATA_URL}/risk_points.geojson`),
-		fetch(`${DATA_URL}/spills.geojson`),
-	]);
-	riskLookup = await lookupRes.json();
-	riskPointsData = (await ptsRes.json()).features;
-	spillsData = (await spillsRes.json()).features;
+	try {
+		const [lookupRes, ptsRes, spillsRes] = await Promise.all([
+			fetch(`${DATA_URL}/risk_lookup.json`),
+			fetch(`${DATA_URL}/risk_points.geojson`),
+			fetch(`${DATA_URL}/spills.geojson`),
+		]);
+		if (!lookupRes.ok || !ptsRes.ok || !spillsRes.ok) {
+			throw new Error('risk brief data fetch failed');
+		}
+		riskLookup = await lookupRes.json();
+		riskPointsData = (await ptsRes.json()).features;
+		spillsData = (await spillsRes.json()).features;
+	} catch (err) {
+		riskLookup = null;
+		riskPointsData = null;
+		spillsData = null;
+	}
 }
 
 function lookupRisk(lon, lat) {
@@ -150,6 +159,12 @@ function showRiskBrief(placeName, lon, lat) {
 	const placeEl = document.getElementById('risk-brief-place');
 	const bodyEl = document.getElementById('risk-brief-body');
 	placeEl.textContent = placeName;
+
+	if (!riskLookup) {
+		bodyEl.innerHTML = `<div class="rb-note">Risk data failed to load. Try reloading the page.</div>`;
+		document.getElementById('risk-brief').classList.add('is-open');
+		return;
+	}
 
 	const risk = lookupRisk(lon, lat);
 	if (!risk) {
@@ -200,9 +215,27 @@ function setupRiskBrief() {
 	});
 }
 
+function showDataUnavailable() {
+	document.getElementById('stats').innerHTML =
+		'<div class="panel-note">Model stats unavailable.</div>';
+	document.getElementById('exposure-value').textContent = '—';
+	document.getElementById('exposure-label').textContent =
+		'population data unavailable';
+	document.getElementById('exposure-stats').innerHTML =
+		'<div class="panel-note">Population data unavailable.</div>';
+}
+
 async function loadMeta() {
-	const res = await fetch(`${DATA_URL}/metadata.json`);
-	const meta = await res.json();
+	let res, meta;
+	try {
+		res = await fetch(`${DATA_URL}/metadata.json`);
+		if (!res.ok) throw new Error(`metadata.json: ${res.status}`);
+		meta = await res.json();
+	} catch (err) {
+		showDataUnavailable();
+		return;
+	}
+
 	const stats = document.getElementById('stats');
 
 	const rows = [
@@ -253,8 +286,40 @@ async function loadMeta() {
 	}
 }
 
-map.on('load', async () => {
-	await loadMeta();
+const CRITICAL_SOURCES = new Set(['grid', 'hotspots', 'spills', 'points']);
+const pendingSources = new Set(CRITICAL_SOURCES);
+
+function hideLoadState() {
+	document.getElementById('load-state').classList.add('is-hidden');
+}
+
+function showLoadError(message) {
+	const el = document.getElementById('load-state');
+	document.getElementById('load-state-error-text').textContent = message;
+	el.setAttribute('role', 'alert');
+	el.classList.add('is-error');
+	el.classList.remove('is-hidden');
+}
+
+map.on('sourcedata', (e) => {
+	if (e.isSourceLoaded && pendingSources.has(e.sourceId)) {
+		pendingSources.delete(e.sourceId);
+		if (pendingSources.size === 0) hideLoadState();
+	}
+});
+
+map.on('error', (e) => {
+	if (e.sourceId && CRITICAL_SOURCES.has(e.sourceId)) {
+		showLoadError('Risk data failed to load.');
+	}
+});
+
+document.getElementById('load-state-retry').addEventListener('click', () => {
+	location.reload();
+});
+
+map.on('load', () => {
+	loadMeta();
 	loadRiskBriefData().then(setupYearSlider);
 	setupRiskBrief();
 

@@ -65,6 +65,42 @@
 				<span id="exposure-label">people live in critical or high-risk cells</span>
 			</div>
 
+			<div id="load-state" role="status" aria-live="polite">
+				<div id="load-state-spinner">
+					<svg
+						class="spinner"
+						width="28"
+						height="28"
+						viewBox="0 0 28 28"
+						xmlns="http://www.w3.org/2000/svg"
+						aria-hidden="true"
+					>
+						<circle
+							class="spinner-track"
+							cx="14"
+							cy="14"
+							r="11"
+							fill="none"
+							stroke-width="2.5"
+						/>
+						<circle
+							class="spinner-arc"
+							cx="14"
+							cy="14"
+							r="11"
+							fill="none"
+							stroke-width="2.5"
+							stroke-linecap="round"
+						/>
+					</svg>
+					<span>Loading model data…</span>
+				</div>
+				<div id="load-state-error">
+					<span id="load-state-error-text">Risk data failed to load.</span>
+					<button type="button" id="load-state-retry">Reload</button>
+				</div>
+			</div>
+
 			<div id="map"></div>
 
 			<button type="button" id="panel-btn" aria-label="Toggle layers panel">
@@ -148,6 +184,7 @@
 							max="2026"
 							value="2026"
 							step="1"
+							aria-label="Show spill incidents through year"
 						/>
 					</div>
 					<label class="toggle">
@@ -212,7 +249,7 @@
 
 			<div id="tooltip"></div>
 
-			<div id="risk-brief">
+			<div id="risk-brief" role="region" aria-live="polite" aria-label="Risk brief">
 				<button type="button" id="risk-brief-close" aria-label="Close">
 					&times;
 				</button>
